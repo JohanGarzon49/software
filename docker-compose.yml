@@ -1,0 +1,35 @@
+version: "3.8"
+services:
+ postgres:
+ image: postgres:15
+ environment:
+ POSTGRES_USER: app
+ POSTGRES_PASSWORD: secret
+ POSTGRES_DB: appdb
+ volumes:
+ - pgdata:/var/lib/postgresql/data
+ networks:
+ - app-net
+ backend:
+ build: ./backend
+ environment:
+ DATABASE_URL: postgres://app:secret@postgres:5432/appdb
+ PORT: 4000
+ ports:
+ - "4000:4000" # Solo para desarrollo; en prod preferir no exponer
+ depends_on:
+ - postgres
+ networks:
+ - app-net
+ frontend:
+ build: ./frontend
+ ports:
+ - "3000:80" # Exponer frontend a puerto 3000 en host (opcional)
+ depends_on:
+ - backend
+ networks:
+ - app-net
+networks:
+ app-net:
+volumes:
+ pgdata:

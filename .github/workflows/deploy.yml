@@ -1,0 +1,39 @@
+name: Build and Deploy
+on:
+ push:
+ branches: [ main ]
+jobs:
+ build-and-push:
+ runs-on: ubuntu-latest
+ steps:
+ - uses: actions/checkout@v4
+ - name: Build backend image
+ run: |
+ docker build -t registry.example.com/myapp-backend:latest ./backend
+ - name: Build frontend image
+ run: |
+ docker build -t registry.example.com/myapp-frontend:latest ./frontend
+ - name: Login to registry
+ run: |
+ echo "${{ secrets.REGISTRY_TOKEN }}" | docker login registry.example.com -u "${{
+secrets.REGISTRY_USER }}" --password-stdin
+ - name: Push images
+ run: |
+ docker push registry.example.com/myapp-backend:latest
+ docker push registry.example.com/myapp-frontend:latest
+ deploy:
+ needs: build-and-push
+ runs-on: ubuntu-latest
+ steps:
+ - name: Deploy via SSH
+ uses: appleboy/ssh-action@v0.1.8
+ with:
+ host: ${{ secrets.SERVER_HOST }}
+ username: ${{ secrets.SERVER_USER }}
+ key: ${{ secrets.SSH_KEY }}
+ port: 22
+ script: |
+ cd /srv/myapp
+ docker compose pull
+ docker compose up -d
+ docker image prune -f
